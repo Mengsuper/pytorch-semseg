@@ -22,7 +22,7 @@ class camvidLoader(data.Dataset):
     ):
         self.root = root
         self.split = split
-        self.img_size = [360, 480]
+        self.img_size = img_size
         self.is_transform = is_transform
         self.augmentations = augmentations
         self.img_norm = img_norm
@@ -46,7 +46,7 @@ class camvidLoader(data.Dataset):
         img = np.array(img, dtype=np.uint8)
 
         lbl = m.imread(lbl_path)
-        lbl = np.array(lbl, dtype=np.int8)
+        lbl = np.array(lbl, dtype=np.uint8)
 
         if self.augmentations is not None:
             img, lbl = self.augmentations(img, lbl)
