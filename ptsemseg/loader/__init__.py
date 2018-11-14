@@ -1,5 +1,6 @@
 import json
 
+from ptsemseg.loader.chroma_loader import chromaLoader
 from ptsemseg.loader.pascal_voc_loader import pascalVOCLoader
 from ptsemseg.loader.camvid_loader import camvidLoader
 from ptsemseg.loader.ade20k_loader import ADE20KLoader
@@ -18,6 +19,7 @@ def get_loader(name):
     :param name:
     """
     return {
+        "chroma": chromaLoader,
         "pascal": pascalVOCLoader,
         "camvid": camvidLoader,
         "ade20k": ADE20KLoader,

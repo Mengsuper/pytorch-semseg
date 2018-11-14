@@ -20,7 +20,8 @@ class segnet(nn.Module):
         self.up4 = segnetUp3(512, 256)
         self.up3 = segnetUp3(256, 128)
         self.up2 = segnetUp2(128, 64)
-        self.up1 = segnetUp2(64, n_classes)
+        #self.up1 = segnetUp2(64, n_classes)
+        self.up1 = segnetUp2_chroma(64, n_classes)
 
     def forward(self, inputs):
 

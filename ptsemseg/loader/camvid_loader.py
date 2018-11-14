@@ -44,7 +44,7 @@ class camvidLoader(data.Dataset):
 
         img = m.imread(img_path)
         img = np.array(img, dtype=np.uint8)
-
+        
         lbl = m.imread(lbl_path)
         lbl = np.array(lbl, dtype=np.uint8)
 

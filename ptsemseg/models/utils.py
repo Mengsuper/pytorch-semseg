@@ -266,6 +266,23 @@ class segnetUp2(nn.Module):
         outputs = self.conv2(outputs)
         return outputs
 
+class segnetUp2_chroma(nn.Module):
+    def __init__(self, in_size, out_size):
+        super(segnetUp2_chroma, self).__init__()
+        self.unpool = nn.MaxUnpool2d(2, 2)
+        self.conv1 = conv2DBatchNormRelu(in_size, in_size, 3, 1, 1)
+        self.conv2 = conv2DBatchNormRelu(in_size, 1, 3, 1, 1)
+        self.conv3 = conv2DBatchNormRelu(in_size, 2, 2, 2, 0)
+
+    def forward(self, inputs, indices, output_shape):
+        outputs = self.unpool(input=inputs, indices=indices, output_size=output_shape)
+        outputs = self.conv1(outputs)
+        outputs_luma = self.conv2(outputs)
+        outputs_chroma = self.conv3(outputs)
+        print (outputs_luma.shape, outputs_chroma.shape)
+        # To do: zero paddings to outputs_chroma 
+        return outputs
+
 
 class segnetUp3(nn.Module):
     def __init__(self, in_size, out_size):
