@@ -32,7 +32,7 @@ class chromaLoader(data.Dataset):
         self.files = collections.defaultdict(list)
 
         for split in ["train", "test", "val"]:
-            file_list = os.listdir(root + "/" + split)
+            file_list = [f for f in os.listdir(root + "/" + split) if not f.startswith('.')]
             self.files[split] = file_list
 
     def __len__(self):
@@ -43,15 +43,12 @@ class chromaLoader(data.Dataset):
         img_path = self.root + "/" + self.split + "/" + img_name
         lbl_path = self.root + "/" + self.split + "annot/" + img_name
 
-        #img = m.imread(img_path)
-        #img = np.array(img, dtype=np.uint8)
+        print (img_name)
         img = np.loadtxt(img_path, dtype=np.float16) 
-        img = np.reshape(img, (360, 480, 3))
+        img = np.reshape(img, (3, 360, 480))
 
-        #lbl = m.imread(lbl_path)
-        #lbl = np.array(lbl, dtype=np.uint8)
         lbl = np.loadtxt(lbl_path, dtype=np.float16) 
-        lbl = np.reshape(lbl, (360, 480, 3))
+        lbl = np.reshape(lbl, (3, 360, 480))
 
         if self.augmentations is not None:
             img, lbl = self.augmentations(img, lbl)
@@ -74,7 +71,7 @@ class chromaLoader(data.Dataset):
             # to divide by 255.0
             img = img.astype(float) / 255.0
         '''
-        # NHWC -> NCHW
+        # NHWC -> NCHW ??? 
         img = img.transpose(2, 0, 1)
 
         img = torch.from_numpy(img).float()
@@ -130,7 +127,7 @@ class chromaLoader(data.Dataset):
 if __name__ == "__main__":
     local_path = "/home/meetshah1995/datasets/segnet/CamVid"
     augmentations = Compose([RandomRotate(10), RandomHorizontallyFlip()])
-
+    
     dst = chromaLoader(local_path, is_transform=True, augmentations=augmentations)
     bs = 4
     trainloader = data.DataLoader(dst, batch_size=bs)

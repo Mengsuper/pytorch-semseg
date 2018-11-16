@@ -279,9 +279,7 @@ class segnetUp2_chroma(nn.Module):
         outputs = self.conv1(outputs)
         outputs_luma = self.conv2(outputs)
         outputs_chroma = self.conv3(outputs)
-        print (outputs_luma.shape, outputs_chroma.shape)
-        # To do: zero paddings to outputs_chroma 
-        return outputs
+        return (outputs_luma, outputs_chroma)
 
 
 class segnetUp3(nn.Module):

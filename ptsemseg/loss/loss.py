@@ -2,11 +2,13 @@ import torch
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
+from ptsemseg.loss.chromaUpSampling import chromaUpSampling 
 
 
 def cross_entropy2d(input, target, weight=None, size_average=True):
     n, c, h, w = input.size()
     nt, ht, wt = target.size()
+    print (input.size(), target.size())
 
     # Handle inconsistent size between input and target
     if h > ht and w > wt:  # upsample labels
@@ -25,6 +27,17 @@ def cross_entropy2d(input, target, weight=None, size_average=True):
     )
     return loss
 
+def chrom_downsampling_loss(input, target, weight=None, size_average=True):
+    Luma = input[0]
+    Chroma = input[1]
+    ChromaA = Chroma[:, 0, :, :]
+    ChromaB = Chroma[:, 1, :, :]
+    #print (Luma.size(), ChromaA.size(), ChromaB.size(), target.size())
+    input = chromaUpSampling(Luma, ChromaA, ChromaB, '420', 'MPEG_CfE')
+    MSELoss = nn.MSELoss() # dummy loss only for test
+    loss = MSELoss(input, target)
+    return loss
+    
 
 def multi_scale_cross_entropy2d(
     input, target, weight=None, size_average=True, scale_weight=None
