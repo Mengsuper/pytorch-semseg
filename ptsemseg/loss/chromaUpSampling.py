@@ -5,11 +5,11 @@ from torch.autograd import Variable
 
 def chromaUpSampling(Luma, ChromaA, ChromaB, Sampling, Filter):
 
-	# better way to reduce dimension?? (this method make copy of data)
-	# Luma shape: 1x1x360x480, Chroma: 1x180x240
+	# Luma shape: 1x1x360x480, Chroma: 1x1x180x240 for batch size 1
+	# This code only handles batch size 1
 	Luma = Luma.view(Luma.shape[2], Luma.shape[3])
-	ChromaA = ChromaA.view(ChromaA.shape[1], ChromaA.shape[2])
-	ChromaB = ChromaB.view(ChromaB.shape[1], ChromaB.shape[2])
+	ChromaA = ChromaA.view(ChromaA.shape[2], ChromaA.shape[3])
+	ChromaB = ChromaB.view(ChromaB.shape[2], ChromaB.shape[3])
 
 	# https://stackoverflow.com/questions/1721802/what-is-the-equivalent-of-matlabs-repmat-in-numpy
 	Luma = Luma[:, :, np.newaxis]

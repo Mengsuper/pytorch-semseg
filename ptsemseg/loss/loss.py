@@ -30,9 +30,9 @@ def cross_entropy2d(input, target, weight=None, size_average=True):
 def chrom_downsampling_loss(input, target, weight=None, size_average=True):
     Luma = input[0]
     Chroma = input[1]
-    ChromaA = Chroma[:, 0, :, :]
-    ChromaB = Chroma[:, 1, :, :]
-    #print (Luma.size(), ChromaA.size(), ChromaB.size(), target.size())
+    ChromaA = Chroma[:, 0:1, :, :]
+    ChromaB = Chroma[:, 1:2, :, :]
+    #print (input[1].size(), Luma.size(), ChromaA.size(), ChromaB.size(), target.size())
     input = chromaUpSampling(Luma, ChromaA, ChromaB, '420', 'MPEG_CfE')
     MSELoss = nn.MSELoss() # dummy loss only for test
     loss = MSELoss(input, target)
