@@ -59,10 +59,11 @@ class chromaLoader(data.Dataset):
         return img, lbl
 
     def transform(self, img, lbl):
+        '''
         img = m.imresize(
             img, (self.img_size[0], self.img_size[1])
         )  # uint8 with RGB mode
-        '''
+        
         img = img[:, :, ::-1]  # RGB -> BGR
         img = img.astype(np.float64)
         img -= self.mean
@@ -70,9 +71,10 @@ class chromaLoader(data.Dataset):
             # Resize scales images from 0 to 255, thus we need
             # to divide by 255.0
             img = img.astype(float) / 255.0
-        '''
+        
         # NHWC -> NCHW ??? 
         img = img.transpose(2, 0, 1)
+        '''
 
         img = torch.from_numpy(img).float()
         lbl = torch.from_numpy(lbl).float()
