@@ -19,6 +19,7 @@ training:
         weight_decay: 0.0005
         momentum: 0.99
     loss:
-        name: 'ssim_loss_function'
+        name: 'ssim_loss'
+        size_average: False
     lr_schedule:
     resume: 

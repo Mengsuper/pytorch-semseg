@@ -20,5 +20,6 @@ training:
         momentum: 0.99
     loss:
         name: 'ssim_loss_function'
+        size_average: False
     lr_schedule:
     resume: 

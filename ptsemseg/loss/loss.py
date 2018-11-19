@@ -2,7 +2,9 @@ import torch
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
-from ptsemseg.loss.chromaUpSampling import chromaUpSampling 
+from ptsemseg.loss.chromaUpSampling import chromaUpSampling
+import ptsemseg.loss.pytorch_ssim
+from torch.autograd import Variable
 
 
 def cross_entropy2d(input, target, weight=None, size_average=True):
@@ -38,6 +40,20 @@ def chrom_downsampling_loss(input, target, weight=None, size_average=True):
     loss = MSELoss(input, target)
     return loss
     
+def ssim_loss_function(actual_img, expected_img, weight=None, size_average=True):
+    img1_0 = np.reshape(actual_img, (1,3,360,480))
+    img1_1 = torch.from_numpy(img1_0)
+    img1_2 = Variable(img1_1)
+
+    img2_0 = np.reshape(expected_img, (1,3,360,480))
+    img2_1 = torch.from_numpy(img1_0)
+    img2_2 = Variable(img1_1)
+
+    #pytorch_ssim.ssim(img1_2, img2_2) #calculating the ssim value for testing
+    ssim_loss = pytorch_ssim.SSIM(window_size = 11)
+    loss = ssim_loss(img1_2, img2_2)
+    return loss
+
 
 def multi_scale_cross_entropy2d(
     input, target, weight=None, size_average=True, scale_weight=None
