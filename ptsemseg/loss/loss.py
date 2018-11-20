@@ -40,18 +40,30 @@ def chrom_downsampling_loss(input, target, weight=None, size_average=True):
     loss = MSELoss(input, target)
     return loss
     
-def ssim_loss_function(actual_img, expected_img, weight=None, size_average=True):
-    img1_0 = np.reshape(actual_img, (1,3,360,480))
-    img1_1 = torch.from_numpy(img1_0)
-    img1_2 = Variable(img1_1)
+def ssim_loss_function(input, target, weight=None, size_average=True):
+    
+    #print(input[0].size())
+    #print(input[1].size())
+    Luma = input[0]
+    Chroma = input[1]
+    ChromaA = Chroma[:, 0:1, :, :]
+    ChromaB = Chroma[:, 1:2, :, :]
+    input = chromaUpSampling(Luma, ChromaA, ChromaB, '420', 'MPEG_CfE')
+    #print(input.size())
 
-    img2_0 = np.reshape(expected_img, (1,3,360,480))
-    img2_1 = torch.from_numpy(img1_0)
-    img2_2 = Variable(img1_1)
+    #img1_0 = np.reshape(input, (1,3,360,480))
+    #img1_1 = torch.from_numpy(img1_0)
+    img1_2 = Variable(input)
+
+    #img2_0 = np.reshape(target, (1,3,360,480))
+    #img2_1 = torch.from_numpy(img1_0)
+    img2_2 = Variable(target)
 
     #pytorch_ssim.ssim(img1_2, img2_2) #calculating the ssim value for testing
-    ssim_loss = pytorch_ssim.SSIM(window_size = 11)
-    loss = ssim_loss(img1_2, img2_2)
+    ssim_loss = ptsemseg.loss.pytorch_ssim.SSIM(window_size = 11)
+    loss = Variable(ssim_loss(img1_2, img2_2), requires_grad = True)
+    #ssim_loss = ptsemseg.loss.pytorch_ssim.ssim(img1_2, img2_2)
+    #loss = Variable(ssim_loss, requires_grad = True)
     return loss
 
 
