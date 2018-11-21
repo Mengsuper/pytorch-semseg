@@ -43,7 +43,7 @@ class chromaLoader(data.Dataset):
         img_path = self.root + "/" + self.split + "/" + img_name
         lbl_path = self.root + "/" + self.split + "annot/" + img_name
 
-        print (img_name)
+        #print (img_name)
         img = np.loadtxt(img_path, dtype=np.float16) 
         img = np.reshape(img, (3, 360, 480))
 
@@ -75,6 +75,14 @@ class chromaLoader(data.Dataset):
         # NHWC -> NCHW ??? 
         img = img.transpose(2, 0, 1)
         '''
+
+        # zero-center the YUV value
+        max_val = np.array([512.0])
+        img -=  max_val
+        lbl -=  max_val
+
+        img /= max_val
+        lbl /= max_val
 
         img = torch.from_numpy(img).float()
         lbl = torch.from_numpy(lbl).float()
