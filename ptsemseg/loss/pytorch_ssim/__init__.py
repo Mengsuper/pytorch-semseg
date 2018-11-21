@@ -30,6 +30,8 @@ def _ssim(img1, img2, window, window_size, channel, size_average = True):
     C2 = 0.03**2
 
     ssim_map = ((2*mu1_mu2 + C1)*(2*sigma12 + C2))/((mu1_sq + mu2_sq + C1)*(sigma1_sq + sigma2_sq + C2))
+    print(ssim_map)
+
 
     if size_average:
         return ssim_map.mean()
