@@ -6,7 +6,7 @@ data:
     val_split: val
     img_rows: 360
     img_cols: 480
-    path: /Users/LiMeng/Downloads/541Multimedia/Project/pytorch-semseg/dataset/chroma 
+    path: /home/sugun/multimedia_systems/pytorch/pytorch-semseg/dataset/chroma
 training:
     train_iters: 12
     batch_size: 1
