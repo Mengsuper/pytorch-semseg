@@ -147,7 +147,8 @@ def train(cfg, writer, logger):
                 time_meter.reset()
 
             if (i + 1) % cfg['training']['val_interval'] == 0 or \
-               (i + 1) == cfg['training']['train_iters']:
+               (i + 1) == cfg['training']['train_iters'] or \
+               (i + 1) % 2000 == 0:
                
                 '''
                 model.eval()

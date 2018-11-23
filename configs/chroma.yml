@@ -8,11 +8,11 @@ data:
     img_cols: 480
     path: /Users/LiMeng/Downloads/541Multimedia/Project/pytorch-semseg/dataset/chroma 
 training:
-    train_iters: 12
+    train_iters: 9000
     batch_size: 1
     val_interval: 1000
     n_workers: 0
-    print_interval: 1
+    print_interval: 2
     optimizer:
         name: 'sgd'
         lr: 1.0e-10

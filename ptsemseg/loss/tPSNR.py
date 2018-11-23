@@ -1,8 +1,6 @@
-import cv2
 import torch
 import numpy as np
 from torch.autograd import Variable
-from ptsemseg.loss.chromaUpSampling import chromaUpSampling 
 
 def inverseQuant(Img, BitDepth):
     Img[:, 0] = (Img[: ,0] / (2 << (BitDepth-8)) -  16) / 219
