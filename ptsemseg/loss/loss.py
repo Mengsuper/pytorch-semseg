@@ -35,10 +35,10 @@ def chrom_downsampling_loss(input, target, weight=None, size_average=True):
     #print (input[1].size(), Luma.size(), ChromaA.size(), ChromaB.size(), target.size())
     #input = chromaUpSampling(Luma, ChromaA, ChromaB, '420', 'MPEG_CfE')
     
-    MSELoss = nn.MSELoss() # dummy loss only for test
-    loss = MSELoss(input, target)
+    #MSELoss = nn.MSELoss() # dummy loss only for test
+    #loss = MSELoss(input, target)
     
-    #loss = tPSNR(input, target)
+    loss = tPSNR(input, target)
 
     return loss
     

@@ -43,7 +43,6 @@ class chromaLoader(data.Dataset):
         img_path = self.root + "/" + self.split + "/" + img_name
         lbl_path = self.root + "/" + self.split + "annot/" + img_name
 
-        #print (img_name)
         img = np.loadtxt(img_path, dtype=np.float16) 
         img = np.reshape(img, (3, 360, 480))
 
