@@ -4,7 +4,6 @@ import numpy as np
 from torch.autograd import Variable
 from ptsemseg.loss.chromaUpSampling import chromaUpSampling 
 
-
 def inverseQuant(Img, BitDepth):
     Img[:, 0] = (Img[: ,0] / (2 << (BitDepth-8)) -  16) / 219
     Img[:, 1] = (Img[: ,1] / (2 << (BitDepth-8)) - 128) / 224
@@ -36,7 +35,7 @@ def inversePQ_TF(x):
     c2 = 2413.0*32/4096
     c3 = 2392.0*32/4096
     x = x**(1/m2)
-    numerator = np.max(x- c1, 0)
+    numerator = np.maximum(x- c1, 0)
     denominator = c2 - c3 * x
     return (numerator/denominator)**(1/m1)
 
@@ -44,7 +43,7 @@ def PhilipsTF(x, y):
     rho = 25
     gamma = 2.4
     r = y / 5000.0
-    N = np.log(1 + (rho - 1) * ((r*x)**(1/gamma)))
+    N = np.log(1 + (rho - 1) * ((r*x)**(1/gamma))) # log_e 
     M = np.log(1 + (rho - 1) * (r**(1/gamma))) 
     return N/M
 
@@ -59,6 +58,9 @@ def RGB2XYZ(R, G, B):
     Z = 0.000000 * R + 0.028073 * G + 1.060985 * B
     return (X, Y, Z)
 
+def SSE(X_input, X_target):
+    return np.square(X_input - X_target).sum() 
+
 def tPSNR(input, target):
 
     input  = input.view(input.shape[1], input.shape[2], input.shape[3])
@@ -66,11 +68,11 @@ def tPSNR(input, target):
     target = target.view(target.shape[1], target.shape[2], target.shape[3])
     target = target.data.numpy()
 
-    # denormalization
-    input  = input * 512 + 512
-    target = target *  512 + 512
+    # denormalization 
+    input  = input  * 512 + 512
+    target = target * 512 + 512
 
-    # reshape to (360*480) x 3
+    # reshape to (360*480) x 3 => 172800 x 3
     input  = np.reshape(input, (-1, 3))
     target = np.reshape(target, (-1, 3))
     
@@ -105,11 +107,14 @@ def tPSNR(input, target):
     (X_target, Y_target, Z_target) = RGB2XYZ(R_target, G_target, B_target)
     
     # transfer function
-    (X_prime_input,  Y_prime_input,  Z_prime_input)  = transfer(X_input,  Y_input,  Z_input) 
-    (X_prime_target, Y_prime_target, Z_prime_target) = transfer(X_target, Y_target, Z_target)
+    (X_input,  Y_input,  Z_input)  = transfer(X_input,  Y_input,  Z_input) 
+    (X_target, Y_target, Z_target) = transfer(X_target, Y_target, Z_target)
 
-    # reshape
-    
+    # Sum of Square Error 
+    SSEs = (SSE(X_input, X_target) + SSE(Y_input, Y_target) + SSE(Z_input, Z_target)) / 3
+
+    # tPSNR
+    loss = 10 * np.log10(1023 / SSEs)
 
     loss = Variable(torch.Tensor(np.array(loss)), requires_grad=True)
 
