@@ -14,8 +14,8 @@ training:
     n_workers: 0
     print_interval: 2
     optimizer:
-        name: 'sgd'
-        lr: 1.0e-10
+        name: 'adam'
+        lr: 1.0e-3
         weight_decay: 0.0005
         momentum: 0.99
     loss:

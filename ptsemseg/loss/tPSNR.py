@@ -110,7 +110,7 @@ def tPSNR(input, target):
 
     # Sum of Square Error 
     SSEs = (SSE(X_input, X_target) + SSE(Y_input, Y_target) + SSE(Z_input, Z_target)) / 3
-
+    
     # tPSNR
     loss = 10 * np.log10(1023 / SSEs)
 
