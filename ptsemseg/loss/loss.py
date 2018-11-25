@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from ptsemseg.loss.chromaUpSampling import chromaUpSampling
 import ptsemseg.loss.pytorch_ssim
 from torch.autograd import Variable
+from ptsemseg.loss.tPSNR import tPSNR
 
 def cross_entropy2d(input, target, weight=None, size_average=True):
     n, c, h, w = input.size()

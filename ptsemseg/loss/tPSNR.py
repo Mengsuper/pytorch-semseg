@@ -117,3 +117,108 @@ def tPSNR(input, target):
     loss = Variable(torch.Tensor(np.array(loss)), requires_grad=True)
 
     return loss
+
+
+def convToLab(x):
+    if x >= 0.008856:
+        return x^(1/3)
+    else:
+        return 7.78704 * x + 0.137931 
+
+def XYZtoLab(X,Y,Z):
+    Yn = 100
+    invYn = 1.0 / Yn
+    invXn = invYn / 0.95047
+    invZn = invYn / 1.08883
+
+    ylab = convToLab(Y * invYn)
+
+    L = 116.0 * ylab - 16.0
+    a = 500.0 * (convToLab(x * invXn) - ylab)
+    b = 200.0 * (ylab - convToLab(z * invZn))
+
+    return (L, a, b)
+
+def distanceDE(L1, a1, b1, L2, a2, b2):
+# distance between two sample (L1,a1,b1) and (L2,a2,b2)
+    cRef = sqrt(a1*a1 + b1*b1)
+    cIn = sqrt(a2*a2 + b2*b2)
+
+    cm = (cRef + cIn) / 2.0
+    g = 0.5 * (1.0 - sqrt(cm^7.0 / (cm^7.0 + 25^7.0)))
+
+    aPRef = (1.0 + g) * a1
+    aPIn = (1.0 + g) * a2
+
+    cPRef = sqrt(aPRef * aPRef + b1 * b1)
+    cPIn = sqrt(aPIn * aPIn + b2 * b2)
+
+    hPRef = np.arctan(b1, aPRef)
+    hPIn = np.arctan(b2, aPIn)
+
+    deltaLp = L1 - L2
+    deltaCp = cPRef - cPIn
+    deltaHp = 2.0 * sqrt(cPRef * cPIn) * np.sin((hPRef - hPIn) / 2.0)
+
+    lpm = (L1 + L2) / 2.0
+    cpm = (cPRef + cPIn) / 2.0
+    hpm = (hPRef + hPIn) / 2.0
+
+
+
+    return
+
+
+def deltaE(input, target):
+
+    input  = input.view(input.shape[1], input.shape[2], input.shape[3])
+    input  = input.data.numpy()
+    target = target.view(target.shape[1], target.shape[2], target.shape[3])
+    target = target.data.numpy() 
+
+    # Converse YCbCr to RGB 
+    # denormalization 
+    input  = input  * 512 + 512
+    target = target * 512 + 512
+
+    # reshape to (360*480) x 3 => 172800 x 3
+    input  = np.reshape(input, (-1, 3))
+    target = np.reshape(target, (-1, 3))
+    
+    # Inverse Quantization 
+    input  = inverseQuant(input, 10)
+    target = inverseQuant(target, 10)
+
+    # Clip 
+    input  = clipImg(input)
+    target = clipImg(target)
+
+    # Y'CbCr to R'G'B' 
+    R_prime_input = clipRGB(input[:, 0] + 1.47460 * input[:, 2])
+    G_prime_input = clipRGB(input[:, 0] - 0.16455 * input[:, 1] - 0.57135 * input[:, 2])
+    B_prime_input = clipRGB(input[:, 0] + 1.88140 * input[:, 1])
+
+    R_prime_target = clipRGB(target[:, 0] + 1.47460 * target[:, 2])
+    G_prime_target = clipRGB(target[:, 0] - 0.16455 * target[:, 1] - 0.57135 * target[:, 2])
+    B_prime_target = clipRGB(target[:, 0] + 1.88140 * target[:, 1])
+
+    # R'G'B' to RGB, and RGB normalization
+    R_input  = inversePQ_TF(R_prime_input)
+    G_input  = inversePQ_TF(G_prime_input)
+    B_input  = inversePQ_TF(B_prime_input)
+
+    R_target = inversePQ_TF(R_prime_target)
+    G_target = inversePQ_TF(G_prime_target)
+    B_target = inversePQ_TF(B_prime_target)
+
+    # RGB to XYZ
+    (X_input,  Y_input,  Z_input)  = RGB2XYZ(R_input,  G_input,  B_input)
+    (X_target, Y_target, Z_target) = RGB2XYZ(R_target, G_target, B_target)
+
+    # XYZ to Lab Space
+    (X_input,  Y_input,  Z_input)  = XYZtoLab(R_input,  G_input,  B_input)
+    (X_target, Y_target, Z_target) = XYZtoLab(R_target, G_target, B_target)
+
+    # deltaE2000 distance DE
+
+    # PSNR_DE
