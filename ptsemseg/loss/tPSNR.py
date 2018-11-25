@@ -141,6 +141,13 @@ def XYZtoLab(X,Y,Z):
 
 def distanceDE(L1, a1, b1, L2, a2, b2):
 # distance between two sample (L1,a1,b1) and (L2,a2,b2)
+
+    DEG275 = 4.7996554429844
+    DEG30 = 0.523598775598299
+    DEG6 = 0.1047197551196598
+    DEG63 = 1.099557428756428
+    DEG25 = 0.436332
+
     cRef = sqrt(a1*a1 + b1*b1)
     cIn = sqrt(a2*a2 + b2*b2)
 
@@ -164,9 +171,22 @@ def distanceDE(L1, a1, b1, L2, a2, b2):
     cpm = (cPRef + cPIn) / 2.0
     hpm = (hPRef + hPIn) / 2.0
 
+    rC = 2.0 * sqrt( cpm^7.0 / ( cpm^7.0 + 257.0 ) )
+    dTheta = DEG30 * exp(-((hpm - DEG275) / DEG25) * ((hpm - DEG275) / DEG25))
+    rT = - np.sin( 2.0 * dTheta ) * rC
+    t = 1.0 - 0.17 * np.cos(hpm - DEG30) + 0.24 * cos(2.0 * hpm) + 0.32 * cos(3.0 * hpm + DEG6) - 0.20 * cos(4.0 * hpm - DEG63)
 
+    sH = 1.0 + ( 0.015 * cpm * t )
+    sC = 1.0 + ( 0.045 * cpm )
+    sL = 1.0 + ( 0.015 * (lpm-50) * (lpm-50) / sqrt(20 + (lpm-50) * (lpm-50)) )
 
-    return
+    deltaLpSL = deltaLp / sL
+    deltaCpSC = deltaCp / sC
+    deltaHpSH = deltaHp / sH
+  
+    DE = sqrt(deltaLpSL * deltaLpSL + deltaCpSC * deltaCpSC + deltaHpSH * deltaHpSH + rT * deltaCpSC * deltaHpSH )
+
+    return DE
 
 
 def deltaE(input, target):
@@ -216,9 +236,15 @@ def deltaE(input, target):
     (X_target, Y_target, Z_target) = RGB2XYZ(R_target, G_target, B_target)
 
     # XYZ to Lab Space
-    (X_input,  Y_input,  Z_input)  = XYZtoLab(R_input,  G_input,  B_input)
-    (X_target, Y_target, Z_target) = XYZtoLab(R_target, G_target, B_target)
+    (L_input,  a_input,  b_input)  = XYZtoLab(X_input,  Y_input,  Z_input)
+    (L_target, a_target, b_target) = XYZtoLab(X_target, Y_target, Z_target)
 
     # deltaE2000 distance DE
+    DE = distanceDE(L_input,  a_input,  b_input, L_target, a_target, b_target)
 
     # PSNR_DE
+    loss = 10 * np.log10(10000 / DE)
+
+    loss = Variable(torch.Tensor(np.array(loss)), requires_grad=True)
+
+    return loss

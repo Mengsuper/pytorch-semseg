@@ -17,9 +17,9 @@ training:
         name: 'adam'
         lr: 1.0e-3
         weight_decay: 0.0005
-        #momentum: 0.99
+        momentum: 0.99
     loss:
-        name: 'chroma_downsampling_loss'
+        name: 'ssim_loss_function'
         size_average: False
     lr_schedule:
     resume: 

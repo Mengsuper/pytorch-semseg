@@ -6,6 +6,7 @@ from ptsemseg.loss.chromaUpSampling import chromaUpSampling
 import ptsemseg.loss.pytorch_ssim
 from torch.autograd import Variable
 from ptsemseg.loss.tPSNR import tPSNR
+from ptsemseg.loss.tPSNR import deltaE
 
 def cross_entropy2d(input, target, weight=None, size_average=True):
     n, c, h, w = input.size()
@@ -40,8 +41,8 @@ def chrom_downsampling_loss(input, target, weight=None, size_average=True):
     #MSELoss = nn.MSELoss() # dummy loss only for test
     #loss = MSELoss(input, target)
     
-    loss = tPSNR(input, target)
-
+    #loss = tPSNR(input, target)
+    loss = deltaE(input, target)
     return loss
     
 def ssim_loss_function(input, target, weight=None, size_average=True):
