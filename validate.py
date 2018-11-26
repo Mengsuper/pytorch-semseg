@@ -19,6 +19,7 @@ from ptsemseg.models import get_model
 from ptsemseg.loader import get_loader, get_data_path
 from ptsemseg.metrics import runningScore
 from ptsemseg.utils import convert_state_dict
+from ptsemseg.loss import get_loss_function
 
 torch.backends.cudnn.benchmark = True
 
@@ -43,8 +44,12 @@ def validate(cfg, args):
 
     valloader = data.DataLoader(loader, 
                                 batch_size=cfg['training']['batch_size'], 
-                                num_workers=8)
-    running_metrics = runningScore(n_classes)
+                                num_workers=0)
+    #running_metrics = runningScore(n_classes)
+
+
+    loss_fn = get_loss_function(cfg)
+    loss_list = []
 
     # Setup Model
 
@@ -73,20 +78,18 @@ def validate(cfg, args):
             pred = np.argmax(outputs, axis=1)
         else:
             outputs = model(images)
-            pred = outputs.data.max(1)[1].cpu().numpy()
+            loss = loss_fn(input=outputs, target=labels)
+            loss_list.append(loss)
+            #pred = outputs.data.max(1)[1].cpu().numpy()
 
         gt = labels.numpy()
 
         if args.measure_time:
             elapsed_time = timeit.default_timer() - start_time
-            print(
-                "Inference time \
-                  (iter {0:5d}): {1:3.5f} fps".format(
-                    i + 1, pred.shape[0] / elapsed_time
-                )
-            )
-        running_metrics.update(gt, pred)
-
+            print ("iter: %d, loss: %.3f, time: %.3f" % (i+1, loss_list[i], elapsed_time))
+            
+        #running_metrics.update(gt, pred)
+    '''
     score, class_iou = running_metrics.get_scores()
 
     for k, v in score.items():
@@ -94,7 +97,7 @@ def validate(cfg, args):
 
     for i in range(n_classes):
         print(i, class_iou[i])
-
+    '''
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Hyperparams")
