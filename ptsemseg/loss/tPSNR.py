@@ -67,8 +67,8 @@ def tPSNR(input, target):
     target = target.data.numpy()
 
     # denormalization 
-    input  = input  * 512 + 512
-    target = target * 512 + 512
+    input  = input  * 1024 + 512
+    target = target * 1024 + 512
 
     # reshape to (360*480) x 3 => 172800 x 3
     input  = np.reshape(input, (-1, 3))
