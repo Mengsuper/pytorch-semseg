@@ -19,7 +19,7 @@ training:
         weight_decay: 0.0005
         #momentum: 0.99
     loss:
-        name: 'chrom_downsampling_loss'
+        name: 'chroma_downsampling_loss'
         size_average: False
     lr_schedule:
     resume: 

@@ -120,8 +120,8 @@ def tPSNR(input, target):
 
 
 def convToLab(x):
-    if x >= 0.008856:
-        return x^(1/3)
+    if x.all() >= 0.008856:
+        return x ** (1/3)
     else:
         return 7.78704 * x + 0.137931 
 
@@ -134,8 +134,8 @@ def XYZtoLab(X,Y,Z):
     ylab = convToLab(Y * invYn)
 
     L = 116.0 * ylab - 16.0
-    a = 500.0 * (convToLab(x * invXn) - ylab)
-    b = 200.0 * (ylab - convToLab(z * invZn))
+    a = 500.0 * (convToLab(X * invXn) - ylab)
+    b = 200.0 * (ylab - convToLab(Z * invZn))
 
     return (L, a, b)
 
@@ -148,43 +148,43 @@ def distanceDE(L1, a1, b1, L2, a2, b2):
     DEG63 = 1.099557428756428
     DEG25 = 0.436332
 
-    cRef = sqrt(a1*a1 + b1*b1)
-    cIn = sqrt(a2*a2 + b2*b2)
+    cRef = np.sqrt(a1*a1 + b1*b1)
+    cIn = np.sqrt(a2*a2 + b2*b2)
 
     cm = (cRef + cIn) / 2.0
-    g = 0.5 * (1.0 - sqrt(cm^7.0 / (cm^7.0 + 25^7.0)))
+    g = 0.5 * (1.0 - np.sqrt(cm ** 7.0 / (cm ** 7.0 + 25 ** 7.0)))
 
     aPRef = (1.0 + g) * a1
     aPIn = (1.0 + g) * a2
 
-    cPRef = sqrt(aPRef * aPRef + b1 * b1)
-    cPIn = sqrt(aPIn * aPIn + b2 * b2)
+    cPRef = np.sqrt(aPRef * aPRef + b1 * b1)
+    cPIn = np.sqrt(aPIn * aPIn + b2 * b2)
 
     hPRef = np.arctan(b1, aPRef)
     hPIn = np.arctan(b2, aPIn)
 
     deltaLp = L1 - L2
     deltaCp = cPRef - cPIn
-    deltaHp = 2.0 * sqrt(cPRef * cPIn) * np.sin((hPRef - hPIn) / 2.0)
+    deltaHp = 2.0 * np.sqrt(cPRef * cPIn) * np.sin((hPRef - hPIn) / 2.0)
 
     lpm = (L1 + L2) / 2.0
     cpm = (cPRef + cPIn) / 2.0
     hpm = (hPRef + hPIn) / 2.0
 
-    rC = 2.0 * sqrt( cpm^7.0 / ( cpm^7.0 + 257.0 ) )
-    dTheta = DEG30 * exp(-((hpm - DEG275) / DEG25) * ((hpm - DEG275) / DEG25))
+    rC = 2.0 * np.sqrt( cpm ** 7.0 / ( cpm ** 7.0 + 257.0 ) )
+    dTheta = DEG30 * np.exp(-((hpm - DEG275) / DEG25) * ((hpm - DEG275) / DEG25))
     rT = - np.sin( 2.0 * dTheta ) * rC
-    t = 1.0 - 0.17 * np.cos(hpm - DEG30) + 0.24 * cos(2.0 * hpm) + 0.32 * cos(3.0 * hpm + DEG6) - 0.20 * cos(4.0 * hpm - DEG63)
+    t = 1.0 - 0.17 * np.cos(hpm - DEG30) + 0.24 * np.cos(2.0 * hpm) + 0.32 * np.cos(3.0 * hpm + DEG6) - 0.20 * np.cos(4.0 * hpm - DEG63)
 
     sH = 1.0 + ( 0.015 * cpm * t )
     sC = 1.0 + ( 0.045 * cpm )
-    sL = 1.0 + ( 0.015 * (lpm-50) * (lpm-50) / sqrt(20 + (lpm-50) * (lpm-50)) )
+    sL = 1.0 + ( 0.015 * (lpm-50) * (lpm-50) / np.sqrt(20 + (lpm-50) * (lpm-50)) )
 
     deltaLpSL = deltaLp / sL
     deltaCpSC = deltaCp / sC
     deltaHpSH = deltaHp / sH
   
-    DE = sqrt(deltaLpSL * deltaLpSL + deltaCpSC * deltaCpSC + deltaHpSH * deltaHpSH + rT * deltaCpSC * deltaHpSH )
+    DE = np.sqrt(deltaLpSL * deltaLpSL + deltaCpSC * deltaCpSC + deltaHpSH * deltaHpSH + rT * deltaCpSC * deltaHpSH )
 
     return DE
 
@@ -244,7 +244,8 @@ def deltaE(input, target):
 
     # PSNR_DE
     loss = 10 * np.log10(10000 / DE)
+    # vector with length of 172800; use mean ? or anything else
 
-    loss = Variable(torch.Tensor(np.array(loss)), requires_grad=True)
+    loss = Variable(torch.Tensor(np.array(np.mean(loss))), requires_grad=True)
 
     return loss
