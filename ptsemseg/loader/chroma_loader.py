@@ -81,8 +81,8 @@ class chromaLoader(data.Dataset):
         lbl -=  max_val
 
         # normalize the data
-        img /= (2*max_val)
-        lbl /= (2*max_val)
+        #img /= (2*max_val)
+        #lbl /= (2*max_val)
 
         img = torch.from_numpy(img).float()
         lbl = torch.from_numpy(lbl).float()

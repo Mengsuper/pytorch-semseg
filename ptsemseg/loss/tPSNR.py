@@ -3,9 +3,9 @@ import numpy as np
 from torch.autograd import Variable
 
 def inverseQuant(Img, BitDepth):
-    Img[:, 0] = (Img[: ,0] / (2 << (BitDepth-8)) -  16) / 219
-    Img[:, 1] = (Img[: ,1] / (2 << (BitDepth-8)) - 128) / 224
-    Img[:, 2] = (Img[: ,2] / (2 << (BitDepth-8)) - 128) / 224
+    Img[:, 0] = (Img[: ,0] / (2 ** (BitDepth-8)) -  16) / 219
+    Img[:, 1] = (Img[: ,1] / (2 ** (BitDepth-8)) - 128) / 224
+    Img[:, 2] = (Img[: ,2] / (2 ** (BitDepth-8)) - 128) / 224
     return Img
 
 def clipRGB(x):
@@ -67,8 +67,10 @@ def tPSNR(input, target):
     target = target.data.numpy()
 
     # denormalization 
-    input  = input  * 1024 + 512
-    target = target * 1024 + 512
+    #input  = input  * 1024 + 512
+    #target = target * 1024 + 512
+    input  += 512
+    target += 512
 
     # reshape to (360*480) x 3 => 172800 x 3
     input  = np.reshape(input, (-1, 3))
