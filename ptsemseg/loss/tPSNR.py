@@ -198,8 +198,8 @@ def deltaE(input, target):
 
     # Converse YCbCr to RGB 
     # denormalization 
-    input  = input  * 512 + 512
-    target = target * 512 + 512
+    input  = input  * 1024 + 512
+    target = target * 1024 + 512
 
     # reshape to (360*480) x 3 => 172800 x 3
     input  = np.reshape(input, (-1, 3))
@@ -241,8 +241,6 @@ def deltaE(input, target):
 
     # deltaE2000 distance DE
     DE = distanceDE(L_input,  a_input,  b_input, L_target, a_target, b_target)
-
-
 
     # PSNR_DE
     loss = 10 * np.log10(10000 / np.mean(DE))
