@@ -56,8 +56,8 @@ def RGB2XYZ(R, G, B):
     Z = 0.000000 * R + 0.028073 * G + 1.060985 * B
     return (X, Y, Z)
 
-def SSE(X_input, X_target):
-    return np.square(X_input - X_target).sum() 
+def MSE(X_input, X_target):
+    return np.square(X_input - X_target).mean()
 
 def tPSNR(input, target):
 
@@ -109,10 +109,10 @@ def tPSNR(input, target):
     (X_target, Y_target, Z_target) = transfer(X_target, Y_target, Z_target)
 
     # Sum of Square Error 
-    SSEs = (SSE(X_input, X_target) + SSE(Y_input, Y_target) + SSE(Z_input, Z_target)) / 3
+    MSEs = (MSE(X_input, X_target) + MSE(Y_input, Y_target) + MSE(Z_input, Z_target)) / 3
     
     # tPSNR
-    loss = 10 * np.log10(1023 / SSEs)
+    loss = 10 * np.log10(1023 / MSEs)
 
     loss = Variable(torch.Tensor(np.array(loss)), requires_grad=True)
 
