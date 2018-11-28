@@ -67,8 +67,8 @@ def tPSNR(input, target):
     target = target.data.numpy()
 
     # denormalization 
-    input  = input  * 512 + 512
-    target = target * 512 + 512
+    input  = input  * 1024 + 512
+    target = target * 1024 + 512
 
     # reshape to (360*480) x 3 => 172800 x 3
     input  = np.reshape(input, (-1, 3))
@@ -171,7 +171,7 @@ def distanceDE(L1, a1, b1, L2, a2, b2):
     cpm = (cPRef + cPIn) / 2.0
     hpm = (hPRef + hPIn) / 2.0
 
-    rC = 2.0 * np.sqrt( cpm ** 7.0 / ( cpm ** 7.0 + 257.0 ) )
+    rC = 2.0 * np.sqrt( cpm ** 7.0 / ( cpm ** 7.0 + 25 ** 7.0 ) )
     dTheta = DEG30 * np.exp(-((hpm - DEG275) / DEG25) * ((hpm - DEG275) / DEG25))
     rT = - np.sin( 2.0 * dTheta ) * rC
     t = 1.0 - 0.17 * np.cos(hpm - DEG30) + 0.24 * np.cos(2.0 * hpm) + 0.32 * np.cos(3.0 * hpm + DEG6) - 0.20 * np.cos(4.0 * hpm - DEG63)
@@ -242,10 +242,12 @@ def deltaE(input, target):
     # deltaE2000 distance DE
     DE = distanceDE(L_input,  a_input,  b_input, L_target, a_target, b_target)
 
-    # PSNR_DE
-    loss = 10 * np.log10(10000 / DE)
-    # vector with length of 172800; use mean ? or anything else
 
-    loss = Variable(torch.Tensor(np.array(np.mean(loss))), requires_grad=True)
+
+    # PSNR_DE
+    loss = 10 * np.log10(10000 / np.mean(DE))
+
+
+    loss = Variable(torch.Tensor(np.array(loss)), requires_grad=True)
 
     return loss
