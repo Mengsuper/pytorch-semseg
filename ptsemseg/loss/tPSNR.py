@@ -3,19 +3,19 @@ import numpy as np
 from torch.autograd import Variable
 
 def inverseQuant(Img, BitDepth):
-    Img[:, 0] = (Img[: ,0] / (2 ** (BitDepth-8)) -  16) / 219
-    Img[:, 1] = (Img[: ,1] / (2 ** (BitDepth-8)) - 128) / 224
-    Img[:, 2] = (Img[: ,2] / (2 ** (BitDepth-8)) - 128) / 224
-    return Img
+    Img0 = (Img[: ,0] / (2 ** (BitDepth-8)) -  16) / 219
+    Img1 = (Img[: ,1] / (2 ** (BitDepth-8)) - 128) / 224
+    Img2 = (Img[: ,2] / (2 ** (BitDepth-8)) - 128) / 224
+    return torch.stack((Img0, Img1, Img2), 1)
 
 def clipRGB(x):
-    return np.clip(x, 0, 1)
+    return torch.clamp(x, 0, 1)
 
 def clipImg(Img):
-    Img[:, 0] = np.clip(Img[:, 0],   0,    1)
-    Img[:, 1] = np.clip(Img[:, 1], -0.5, 0.5)
-    Img[:, 2] = np.clip(Img[:, 2], -0.5, 0.5)
-    return Img
+    Img0 = torch.clamp(Img[:, 0],   0,    1)
+    Img1 = torch.clamp(Img[:, 1], -0.5, 0.5)
+    Img2 = torch.clamp(Img[:, 2], -0.5, 0.5)
+    return torch.stack((Img0, Img1, Img2), 1)
 
 def PQ_TF(x): 
     m1 = 2610.0/(4096*4)
@@ -33,16 +33,17 @@ def inversePQ_TF(x):
     c2 = 2413.0*32/4096
     c3 = 2392.0*32/4096
     x = x**(1/m2)
-    numerator = np.maximum(x- c1, 0)
+    numerator = torch.max(x- c1, torch.zeros([x.size()[0]]))
     denominator = c2 - c3 * x
     return (numerator/denominator)**(1/m1)
 
 def PhilipsTF(x, y):
+    y = torch.Tensor([y])
     rho = 25
     gamma = 2.4
     r = y / 5000.0
-    N = np.log(1 + (rho - 1) * ((r*x)**(1/gamma))) # log_e 
-    M = np.log(1 + (rho - 1) * (r**(1/gamma))) 
+    N = torch.log(1 + (rho - 1) * ((r*x)**(1/gamma))) # log_e 
+    M = torch.log(1 + (rho - 1) * (r**(1/gamma))) 
     return N/M
 
 def transfer(X, Y, Z):
@@ -57,66 +58,56 @@ def RGB2XYZ(R, G, B):
     return (X, Y, Z)
 
 def MSE(X_input, X_target):
-    return np.square(X_input - X_target).mean()
+    return ((X_input - X_target)**2).mean()
 
-def tPSNR(input, target):
+def tPSNR(inputs, targets):
 
-    input  = input.view(input.shape[1], input.shape[2], input.shape[3])
-    input  = input.data.numpy()
-    target = target.view(target.shape[1], target.shape[2], target.shape[3])
-    target = target.data.numpy()
+    #inputs  = input.data.numpy() # inputs  = input.data.cpu().numpy() for GPU
+    #targets = target.data.numpy()
+    batch_size = inputs.size()[0]
 
-    # denormalization 
-    #input  = input  * 1024 + 512
-    #target = target * 1024 + 512
-    input  += 512
-    target += 512
+    Loss = 0.0
 
-    # reshape to (360*480) x 3 => 172800 x 3
-    input  = np.reshape(input, (-1, 3))
-    target = np.reshape(target, (-1, 3))
-    
-    # Inverse Quantization 
-    input  = inverseQuant(input, 10)
-    target = inverseQuant(target, 10)
+    for i in range(batch_size):
 
-    # Clip 
-    input  = clipImg(input)
-    target = clipImg(target)
+        input  = torch.squeeze(inputs[i], 0)
+        target = torch.squeeze(targets[i], 0)
 
-    # Y'CbCr to R'G'B' 
-    R_prime_input = clipRGB(input[:, 0] + 1.47460 * input[:, 2])
-    G_prime_input = clipRGB(input[:, 0] - 0.16455 * input[:, 1] - 0.57135 * input[:, 2])
-    B_prime_input = clipRGB(input[:, 0] + 1.88140 * input[:, 1])
+        # denormalization 
+        #input  = input  * 1024 + 512
+        #target = target * 1024 + 512
+        input  = input  + 512
+        target = target + 512
 
-    R_prime_target = clipRGB(target[:, 0] + 1.47460 * target[:, 2])
-    G_prime_target = clipRGB(target[:, 0] - 0.16455 * target[:, 1] - 0.57135 * target[:, 2])
-    B_prime_target = clipRGB(target[:, 0] + 1.88140 * target[:, 1])
+        # reshape to (360*480) x 3 => 172800 x 3
+        input  = input.view(-1, 3)
+        target = target.view(-1, 3)
+        
+        # Inverse Quantization 
+        input  = inverseQuant(input, 10)
+        target = inverseQuant(target, 10)
 
-    # R'G'B' to RGB, and RGB normalization
-    R_input  = inversePQ_TF(R_prime_input)
-    G_input  = inversePQ_TF(G_prime_input)
-    B_input  = inversePQ_TF(B_prime_input)
+        # Clip 
+        input  = clipImg(input)
+        target = clipImg(target)
 
-    R_target = inversePQ_TF(R_prime_target)
-    G_target = inversePQ_TF(G_prime_target)
-    B_target = inversePQ_TF(B_prime_target)
+        # Y'CbCr to R'G'B' 
+        R_prime_input = clipRGB(input[:, 0] + 1.47460 * input[:, 2])
+        G_prime_input = clipRGB(input[:, 0] - 0.16455 * input[:, 1] - 0.57135 * input[:, 2])
+        B_prime_input = clipRGB(input[:, 0] + 1.88140 * input[:, 1])
 
-    # RGB to XYZ
-    (X_input,  Y_input,  Z_input)  = RGB2XYZ(R_input,  G_input,  B_input)
-    (X_target, Y_target, Z_target) = RGB2XYZ(R_target, G_target, B_target)
-    
-    # transfer function
-    (X_input,  Y_input,  Z_input)  = transfer(X_input,  Y_input,  Z_input) 
-    (X_target, Y_target, Z_target) = transfer(X_target, Y_target, Z_target)
+        R_prime_target = clipRGB(target[:, 0] + 1.47460 * target[:, 2])
+        G_prime_target = clipRGB(target[:, 0] - 0.16455 * target[:, 1] - 0.57135 * target[:, 2])
+        B_prime_target = clipRGB(target[:, 0] + 1.88140 * target[:, 1])
 
-    # Sum of Square Error 
-    MSEs = (MSE(X_input, X_target) + MSE(Y_input, Y_target) + MSE(Z_input, Z_target)) / 3
-    
-    # tPSNR
-    loss = 10 * np.log10(1023 / MSEs)
+        # R'G'B' to RGB, and RGB normalization
+        R_input  = inversePQ_TF(R_prime_input)
+        G_input  = inversePQ_TF(G_prime_input)
+        B_input  = inversePQ_TF(B_prime_input)
 
-    loss = Variable(torch.Tensor(np.array(loss)), requires_grad=True)
+        R_target = inversePQ_TF(R_prime_target)
+        G_target = inversePQ_TF(G_prime_target)
+        B_target = inversePQ_TF(B_prime_target)
 
     return loss
 
