@@ -2,6 +2,13 @@ import torch
 import numpy as np
 from torch.autograd import Variable
 
+use_cuda = torch.cuda.is_available()
+def cudalize(item, use_cuda=use_cuda):
+    if use_cuda:
+        return item.cuda()
+    else:
+        return item
+
 def inverseQuant(Img, BitDepth):
     Img0 = (Img[: ,0] / (2 ** (BitDepth-8)) -  16) / 219
     Img1 = (Img[: ,1] / (2 ** (BitDepth-8)) - 128) / 224
@@ -33,12 +40,13 @@ def inversePQ_TF(x):
     c2 = 2413.0*32/4096
     c3 = 2392.0*32/4096
     x = x**(1/m2)
-    numerator = torch.max(x- c1, torch.zeros([x.size()[0]]))
+    zeros = cudalize(torch.zeros([x.size()[0]]))
+    numerator = torch.max(x-c1, zeros)
     denominator = c2 - c3 * x
     return (numerator/denominator)**(1/m1)
 
 def PhilipsTF(x, y):
-    y = torch.Tensor([y])
+    y = cudalize(torch.Tensor([y]))
     rho = 25
     gamma = 2.4
     r = y / 5000.0

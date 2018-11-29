@@ -38,6 +38,9 @@ def chrom_downsampling_loss(input, target, weight=None, size_average=True):
     #MSELoss = nn.MSELoss() # dummy loss only for test
     #loss = MSELoss(input, target)
     
+    #KLDivLoss = nn.KLDivLoss()
+    #loss = KLDivLoss(input, target)
+
     loss = tPSNR(input, target)
 
     return loss
