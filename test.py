@@ -38,14 +38,14 @@ def test(args):
     if not os.path.exists(outputs_dir):
         os.mkdir(outputs_dir)
         print("Directory " , outputs_dir ,  " Created ")
-    else:    
+    else:
         print("Directory " , outputs_dir ,  " already exists")
-    
+
 
     for img_name in img_list:
         img_path = "./dataset/chroma/test/" + img_name
 
-        img = np.loadtxt(img_path, dtype=np.float16) 
+        img = np.loadtxt(img_path, dtype=np.float16)
         img = np.reshape(img, (3, 360, 480))
         Cb = img[1, :, :]
         Cr = img[2, :, :]
@@ -60,6 +60,7 @@ def test(args):
 
         img = torch.from_numpy(img).float()
         img = img.unsqueeze(0)
+        print(img.size())
 
         # Setup Model
         model_dict = { "arch" : model_name }
@@ -103,9 +104,11 @@ def test(args):
         # save outputs
         outputs = torch.squeeze(outputs, 0)
         outputs = outputs.detach().numpy()
-        outputs = outputs.transpose(2, 0, 1).reshape(-1, 3)
-
-        np.savetxt(outputs_dir + "/" + img_name, outputs)
+        print(outputs.shape)
+        outputs1 = np.array([outputs[0].flatten(), outputs[1].flatten(), outputs[2].flatten()]).transpose()
+        print(outputs1.shape)
+        #outputs = outputs.transpose(2, 0, 1).reshape(-1, 3)
+        np.savetxt(outputs_dir + "/" + img_name, outputs1)
 
 
 if __name__ == "__main__":
