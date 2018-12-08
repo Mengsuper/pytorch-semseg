@@ -1,4 +1,5 @@
 import sys, os
+import yaml
 import torch
 import argparse
 import timeit
@@ -31,79 +32,80 @@ def test(args):
     model_file_name = os.path.split(args.model_path)[1]
     model_name = model_file_name[: model_file_name.find("_")]
 
-    # Setup image
-    print("Read Input Image from : {}".format(args.img_path))
-    img = misc.imread(args.img_path)
+    img_list = [f for f in os.listdir("./dataset/chroma/test") if not f.startswith('.')]
 
-    data_loader = get_loader(args.dataset)
-    data_path = get_data_path(args.dataset)
-    loader = data_loader(data_path, is_transform=True, img_norm=args.img_norm)
-    n_classes = loader.n_classes
+    outputs_dir = os.path.join(os.path.dirname(args.model_path), "test")
+    if not os.path.exists(outputs_dir):
+        os.mkdir(outputs_dir)
+        print("Directory " , outputs_dir ,  " Created ")
+    else:    
+        print("Directory " , outputs_dir ,  " already exists")
+    
 
-    resized_img = misc.imresize(
-        img, (loader.img_size[0], loader.img_size[1]), interp="bicubic"
-    )
+    for img_name in img_list:
+        img_path = "./dataset/chroma/test/" + img_name
 
-    orig_size = img.shape[:-1]
-    if model_name in ["pspnet", "icnet", "icnetBN"]:
-        # uint8 with RGB mode, resize width and height which are odd numbers
-        img = misc.imresize(img, (orig_size[0] // 2 * 2 + 1, orig_size[1] // 2 * 2 + 1))
-    else:
-        img = misc.imresize(img, (loader.img_size[0], loader.img_size[1]))
+        img = np.loadtxt(img_path, dtype=np.float16) 
+        img = np.reshape(img, (3, 360, 480))
+        Cb = img[1, :, :]
+        Cr = img[2, :, :]
+        img[1, :, :] = img[0, :, :]
+        img[2, :, :] = img[0, :, :]
 
-    img = img[:, :, ::-1]
-    img = img.astype(np.float64)
-    img -= loader.mean
-    if args.img_norm:
-        img = img.astype(float) / 255.0
+        max_val = np.array([512.0])
+        img -=  max_val
 
-    # NHWC -> NCHW
-    img = img.transpose(2, 0, 1)
-    img = np.expand_dims(img, 0)
-    img = torch.from_numpy(img).float()
+        # normalize the data
+        img /= (2*max_val)
 
-    # Setup Model
-    model = get_model(model_name, n_classes, version=args.dataset)
-    state = convert_state_dict(torch.load(args.model_path)["model_state"])
-    model.load_state_dict(state)
-    model.eval()
-    model.to(device)
+        img = torch.from_numpy(img).float()
+        img = img.unsqueeze(0)
 
-    images = img.to(device)
-    outputs = model(images)
+        # Setup Model
+        model_dict = { "arch" : model_name }
+        model = get_model(model_dict, n_classes = 3, version=args.dataset)
+        state = convert_state_dict(torch.load(args.model_path)["model_state"])
+        model.load_state_dict(state)
+        model.eval()
+        model.to(device)
 
-    if args.dcrf:
-        unary = outputs.data.cpu().numpy()
-        unary = np.squeeze(unary, 0)
-        unary = -np.log(unary)
-        unary = unary.transpose(2, 1, 0)
-        w, h, c = unary.shape
-        unary = unary.transpose(2, 0, 1).reshape(loader.n_classes, -1)
-        unary = np.ascontiguousarray(unary)
+        images = img.to(device)
+        outputs = model(images)
 
-        resized_img = np.ascontiguousarray(resized_img)
+        if args.dcrf:
+            unary = outputs.data.cpu().numpy()
+            unary = np.squeeze(unary, 0)
+            unary = -np.log(unary)
+            unary = unary.transpose(2, 1, 0)
+            w, h, c = unary.shape
+            unary = unary.transpose(2, 0, 1).reshape(loader.n_classes, -1)
+            unary = np.ascontiguousarray(unary)
 
-        d = dcrf.DenseCRF2D(w, h, loader.n_classes)
-        d.setUnaryEnergy(unary)
-        d.addPairwiseBilateral(sxy=5, srgb=3, rgbim=resized_img, compat=1)
+            resized_img = np.ascontiguousarray(resized_img)
 
-        q = d.inference(50)
-        mask = np.argmax(q, axis=0).reshape(w, h).transpose(1, 0)
-        decoded_crf = loader.decode_segmap(np.array(mask, dtype=np.uint8))
-        dcrf_path = args.out_path[:-4] + "_drf.png"
-        misc.imsave(dcrf_path, decoded_crf)
-        print("Dense CRF Processed Mask Saved at: {}".format(dcrf_path))
+            d = dcrf.DenseCRF2D(w, h, loader.n_classes)
+            d.setUnaryEnergy(unary)
+            d.addPairwiseBilateral(sxy=5, srgb=3, rgbim=resized_img, compat=1)
 
-    pred = np.squeeze(outputs.data.max(1)[1].cpu().numpy(), axis=0)
-    if model_name in ["pspnet", "icnet", "icnetBN"]:
-        pred = pred.astype(np.float32)
-        # float32 with F mode, resize back to orig_size
-        pred = misc.imresize(pred, orig_size, "nearest", mode="F")
+            q = d.inference(50)
+            mask = np.argmax(q, axis=0).reshape(w, h).transpose(1, 0)
+            decoded_crf = loader.decode_segmap(np.array(mask, dtype=np.uint8))
+            dcrf_path = args.out_path[:-4] + "_drf.png"
+            misc.imsave(dcrf_path, decoded_crf)
+            print("Dense CRF Processed Mask Saved at: {}".format(dcrf_path))
 
-    decoded = loader.decode_segmap(pred)
-    print("Classes found: ", np.unique(pred))
-    misc.imsave(args.out_path, decoded)
-    print("Segmentation Mask Saved at: {}".format(args.out_path))
+        pred = np.squeeze(outputs.data.max(1)[1].cpu().numpy(), axis=0)
+        if model_name in ["pspnet", "icnet", "icnetBN"]:
+            pred = pred.astype(np.float32)
+            # float32 with F mode, resize back to orig_size
+            pred = misc.imresize(pred, orig_size, "nearest", mode="F")
+
+        # save outputs
+        outputs = torch.squeeze(outputs, 0)
+        outputs = outputs.detach().numpy()
+        outputs = outputs.transpose(2, 0, 1).reshape(-1, 3)
+
+        np.savetxt(outputs_dir + "/" + img_name, outputs)
 
 
 if __name__ == "__main__":
@@ -119,7 +121,7 @@ if __name__ == "__main__":
         "--dataset",
         nargs="?",
         type=str,
-        default="pascal",
+        default="chroma",
         help="Dataset to use ['pascal, camvid, ade20k etc']",
     )
 

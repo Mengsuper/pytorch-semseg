@@ -1,4 +1,5 @@
 import os
+import random
 import collections
 import torch
 import torchvision
@@ -33,6 +34,7 @@ class chromaLoader(data.Dataset):
 
         for split in ["train", "test", "val"]:
             file_list = [f for f in os.listdir(root + "/" + split) if not f.startswith('.')]
+            random.shuffle(file_list)
             self.files[split] = file_list
 
     def __len__(self):
@@ -45,9 +47,14 @@ class chromaLoader(data.Dataset):
 
         img = np.loadtxt(img_path, dtype=np.float16) 
         img = np.reshape(img, (3, 360, 480))
+        img[1, :, :] = img[0, :, :]
+        img[2, :, :] = img[0, :, :]
 
         lbl = np.loadtxt(lbl_path, dtype=np.float16) 
         lbl = np.reshape(lbl, (3, 360, 480))
+        lbl[1, :, :] = lbl[0, :, :]
+        lbl[2, :, :] = lbl[0, :, :]
+
 
         if self.augmentations is not None:
             img, lbl = self.augmentations(img, lbl)
@@ -81,8 +88,8 @@ class chromaLoader(data.Dataset):
         lbl -=  max_val
 
         # normalize the data
-        #img /= (2*max_val)
-        #lbl /= (2*max_val)
+        img /= (2*max_val)
+        lbl /= (2*max_val)
 
         img = torch.from_numpy(img).float()
         lbl = torch.from_numpy(lbl).float()
