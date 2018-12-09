@@ -46,22 +46,24 @@ def test(args):
         img_path = "./dataset/chroma/test/" + img_name
 
         img = np.loadtxt(img_path, dtype=np.float16)
-        img = np.reshape(img, (3, 360, 480))
-        Cb = img[1, :, :]
-        Cr = img[2, :, :]
-        img[1, :, :] = img[0, :, :]
-        img[2, :, :] = img[0, :, :]
+        #img = np.reshape(img, (3, 360, 480))
+        img = np.reshape(img, (172800, 3))
+        Cb = img[:, 1]
+        Cr = img[:, 2]
+        img1 = np.reshape(img[:,0], (360, 480))
+        img2 = np.array([img1, img1, img1])
+        #img[1, :, :] = img[0, :, :]
+        #img[2, :, :] = img[0, :, :]
 
         max_val = np.array([512.0])
-        img -=  max_val
+        img2 -=  max_val
 
         # normalize the data
-        img /= (2*max_val)
+        img2 /= (2*max_val)
 
-        img = torch.from_numpy(img).float()
-        img = img.unsqueeze(0)
-        print(img.size())
-
+        img2 = torch.from_numpy(img2).float()
+        img2 = img2.unsqueeze(0)
+        #print(model_name)
         # Setup Model
         model_dict = { "arch" : model_name }
         model = get_model(model_dict, n_classes = 3, version=args.dataset)
@@ -70,7 +72,8 @@ def test(args):
         model.eval()
         model.to(device)
 
-        images = img.to(device)
+        images = img2.to(device)
+        #outputs = img2.to(device)
         outputs = model(images)
 
         if args.dcrf:
@@ -104,11 +107,11 @@ def test(args):
         # save outputs
         outputs = torch.squeeze(outputs, 0)
         outputs = outputs.detach().numpy()
-        print(outputs.shape)
         outputs1 = np.array([outputs[0].flatten(), outputs[1].flatten(), outputs[2].flatten()]).transpose()
-        print(outputs1.shape)
-        #outputs = outputs.transpose(2, 0, 1).reshape(-1, 3)
-        np.savetxt(outputs_dir + "/" + img_name, outputs1)
+        outputs1 *= (2*max_val)
+        outputs1 += max_val
+        outputs2 = np.array([outputs1[:,0].transpose(), Cb.transpose(), Cr.transpose()]).transpose()
+        np.savetxt(outputs_dir + "/" + img_name, outputs2, fmt='%s')
 
 
 if __name__ == "__main__":
